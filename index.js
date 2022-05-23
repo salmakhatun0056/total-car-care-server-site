@@ -18,19 +18,25 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         await client.connect();
-        const toolsConnection = client.db("totalCare").collection("tools")
+        const toolsCollection = client.db("totalCare").collection("tools")
+        const reviewCollection = client.db("totalCare").collection("reviews")
 
         app.get('/get-tool', async (req, res) => {
-            const tools = await toolsConnection.find({}).toArray()
+            const tools = await toolsCollection.find({}).toArray()
             res.send(tools)
         })
         app.get('/get-tool/:id', async (req, res) => {
             const id = req.params.id;
             console.log(id)
             const query = { _id: ObjectId(id) };
-            const result = await toolsConnection.findOne(query);
+            const result = await toolsCollection.findOne(query);
             res.send(result);
         });
+
+        app.get('/get-review', async (req, res) => {
+            const reviews = await reviewCollection.find({}).toArray()
+            res.send(reviews)
+        })
     }
     finally {
 
