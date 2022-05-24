@@ -20,11 +20,19 @@ async function run() {
         await client.connect();
         const toolsCollection = client.db("totalCare").collection("tools")
         const reviewCollection = client.db("totalCare").collection("reviews")
+        const userCollection = client.db("totalCare").collection("users")
 
         app.get('/get-tool', async (req, res) => {
             const tools = await toolsCollection.find({}).toArray()
             res.send(tools)
         })
+
+        app.post('/add-tool', async (req, res) => {
+            const data = req.body
+            const result = await toolsCollection.insertOne(data)
+            res.send(result)
+        })
+
         app.get('/get-tool/:id', async (req, res) => {
             const id = req.params.id;
             console.log(id)
@@ -37,6 +45,43 @@ async function run() {
             const reviews = await reviewCollection.find({}).toArray()
             res.send(reviews)
         })
+
+        app.post('/add-review', async (req, res) => {
+            const data = req.body
+            const result = await reviewCollection.insertOne(data)
+            res.send(result)
+        })
+
+
+        app.put('/users', async (req, res) => {
+            const doc = req.body;
+            const email = req.body.email;
+            const name = req.body.name;
+            const filter = { email: email, name: name };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    email: doc.email
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        })
+
+
+
+        // app.patch('/users', async (req, res) => {
+        //     const doc = req.body;
+        //     const email = req.body.email;
+        //     const filter = { email: email };
+        //     const updateDoc = {
+        //         $set: {
+        //             email: doc.email
+        //         },
+        //     };
+        //     const result = await usersCollection.updateOne(filter, updateDoc);
+        //     res.send(result);
+        // })
     }
     finally {
 
