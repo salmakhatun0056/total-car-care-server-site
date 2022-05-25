@@ -56,8 +56,7 @@ async function run() {
         app.put('/users', async (req, res) => {
             const doc = req.body;
             const email = req.body.email;
-            const name = req.body.name;
-            const filter = { email: email, name: name };
+            const filter = { email: email };
             const options = { upsert: true };
             const updateDoc = {
                 $set: {
@@ -65,6 +64,23 @@ async function run() {
                 },
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        })
+
+        app.get('/users', async (req, res) => {
+            const users = await userCollection.find({}).toArray()
+            res.send(users)
+        })
+
+        app.patch('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
 
