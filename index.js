@@ -1,4 +1,5 @@
 const express = require('express')
+const jwt = require('jsonwebtoken')
 const ObjectId = require('mongodb').ObjectId
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require("cors")
@@ -15,12 +16,29 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.9nqbm.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'UnAuthorized access' });
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden access' })
+        }
+        req.decoded = decoded;
+        next();
+    });
+}
+
 async function run() {
     try {
         await client.connect();
         const toolsCollection = client.db("totalCare").collection("tools")
         const reviewCollection = client.db("totalCare").collection("reviews")
         const userCollection = client.db("totalCare").collection("users")
+        const ordersCollection = client.db("totalCare").collection("orders")
 
         app.get('/get-tool', async (req, res) => {
             const tools = await toolsCollection.find({}).toArray()
@@ -67,9 +85,17 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJWT, async (req, res) => {
             const users = await userCollection.find({}).toArray()
             res.send(users)
+        })
+
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            // console.log(email)
+            const query = { email: email };
+            const result = await userCollection.findOne(query);
+            res.send(result);
         })
 
         app.patch('/users/:email', async (req, res) => {
@@ -83,6 +109,30 @@ async function run() {
             const result = await userCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
+
+
+        // JwtToken
+        app.put('/users/:email', async (req, res) => {
+            const doc = req.body;
+            const email = req.params.email;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: doc,
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            const access = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.send({ result, access });
+        })
+
+        app.post('/orders', verifyJWT, async (req, res) => {
+            const data = req.body
+            const result = await ordersCollection.insertOne(data)
+            res.send(result)
+        })
+
+
+
 
 
 
