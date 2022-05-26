@@ -131,23 +131,26 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/orders/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            // console.log(email)
+            const query = { email: email };
+            const data = await ordersCollection.find(query).toArray()
+            console.log(data)
+            res.send(data);
+        })
+
+        app.delete('/orders/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            // console.log(email)
+            const query = { _id: ObjectId(id) };
+            const data = await ordersCollection.deleteOne(query)
+            console.log(data)
+            res.send(data);
+        })
 
 
 
-
-
-        // app.patch('/users', async (req, res) => {
-        //     const doc = req.body;
-        //     const email = req.body.email;
-        //     const filter = { email: email };
-        //     const updateDoc = {
-        //         $set: {
-        //             email: doc.email
-        //         },
-        //     };
-        //     const result = await usersCollection.updateOne(filter, updateDoc);
-        //     res.send(result);
-        // })
     }
     finally {
 
