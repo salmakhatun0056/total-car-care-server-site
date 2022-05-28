@@ -50,6 +50,12 @@ async function run() {
             const result = await toolsCollection.insertOne(data)
             res.send(result)
         })
+        app.delete('/delete-tool/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const data = await toolsCollection.deleteOne(query)
+            res.send(data)
+        })
 
         app.get('/get-tool/:id', async (req, res) => {
             const id = req.params.id;
@@ -64,8 +70,9 @@ async function run() {
             res.send(reviews)
         })
 
-        app.post('/add-review', async (req, res) => {
+        app.post('/reviews', verifyJWT, async (req, res) => {
             const data = req.body
+            console.log(data)
             const result = await reviewCollection.insertOne(data)
             res.send(result)
         })
@@ -129,6 +136,11 @@ async function run() {
             const data = req.body
             const result = await ordersCollection.insertOne(data)
             res.send(result)
+        })
+
+        app.get('/all-orders', async (req, res) => {
+            const orders = await ordersCollection.find({}).toArray()
+            res.send(orders)
         })
 
         app.get('/orders/:email', verifyJWT, async (req, res) => {
