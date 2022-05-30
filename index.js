@@ -40,7 +40,6 @@ async function run() {
         const reviewCollection = client.db("totalCare").collection("reviews")
         const userCollection = client.db("totalCare").collection("users")
         const ordersCollection = client.db("totalCare").collection("orders")
-        const paymentsCollection = client.db("totalCare").collection("payments")
 
         app.get('/get-tool', async (req, res) => {
             const tools = await toolsCollection.find({}).toArray()
@@ -151,16 +150,14 @@ async function run() {
             const payment = req.body;
             const filter = { _id: ObjectId(id) };
             const updateDoc = {
-                $set: {
-                    paid: true,
-                    transactionId: payment.transactionId
-                }
+                $set: payment
             }
             const updatedOrder = await ordersCollection.updateOne(filter, updateDoc);
-            const result = await paymentsCollection.insertOne(payment);
-            res.send(updateDoc)
+
+            res.send(updatedOrder)
 
         })
+
 
 
         app.post('/orders', verifyJWT, async (req, res) => {
