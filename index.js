@@ -4,6 +4,7 @@ const ObjectId = require('mongodb').ObjectId
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require("cors")
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express()
 const port = process.env.PORT || 5000
@@ -39,6 +40,7 @@ async function run() {
         const reviewCollection = client.db("totalCare").collection("reviews")
         const userCollection = client.db("totalCare").collection("users")
         const ordersCollection = client.db("totalCare").collection("orders")
+        const paymentsCollection = client.db("totalCare").collection("payments")
 
         app.get('/get-tool', async (req, res) => {
             const tools = await toolsCollection.find({}).toArray()
@@ -131,6 +133,36 @@ async function run() {
             res.send({ result, access });
         })
 
+
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const order = req.body;
+            const price = order.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card'],
+            });
+            res.send({ clientSecret: paymentIntent.client_secret })
+        })
+
+        app.patch('/order/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedOrder = await ordersCollection.updateOne(filter, updateDoc);
+            const result = await paymentsCollection.insertOne(payment);
+            res.send(updateDoc)
+
+        })
+
+
         app.post('/orders', verifyJWT, async (req, res) => {
             const data = req.body
             const result = await ordersCollection.insertOne(data)
@@ -144,18 +176,19 @@ async function run() {
 
         app.get('/orders/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-            // console.log(email)
+            console.log(email)
             const query = { email: email };
             const data = await ordersCollection.find(query).toArray()
             console.log(data)
             res.send(data);
         })
 
-        app.get('/orders/:id', verifyJWT, async (req, res) => {
-            const { id } = req.params.id;
-            const query = { _id: ObjectId(id) }
-            const orders = await ordersCollection.findOne(query)
-            res.send(orders)
+        app.get('/order/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const query = { _id: ObjectId(id) };
+            const orders = await ordersCollection.findOne(query);
+            res.send(orders);
         })
 
 
