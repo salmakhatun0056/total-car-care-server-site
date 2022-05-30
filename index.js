@@ -151,6 +151,15 @@ async function run() {
             res.send(data);
         })
 
+        app.get('/orders/:id', verifyJWT, async (req, res) => {
+            const { id } = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const orders = await ordersCollection.findOne(query)
+            res.send(orders)
+        })
+
+
+
         app.delete('/orders/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             // console.log(email)
